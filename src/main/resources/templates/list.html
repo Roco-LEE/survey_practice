@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지호 설문조사 목록</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<style>
+	       table {
+	           width: 100%;
+	           border-collapse: collapse;
+	       }
+	       thead {
+	           background-color: #f2f2f2;
+	       }
+	       th, td {
+	           border: 1px solid #ddd;
+	           padding: 8px;
+	           text-align: left;
+	       }
+	       th {
+	           padding-top: 12px;
+	           padding-bottom: 12px;
+	           background-color: #4CAF50;
+	           color: white;
+	       }
+	       tr:nth-child(even) {
+	           background-color: #f9f9f9;
+	       }
+	       tr:hover {
+	           background-color: #ddd;
+	       }
+	       a {
+	           text-decoration: none;
+	           color: #000;
+	       }
+	       a:hover {
+	           color: #4CAF50;
+	       }
+	   </style>
+</head>
+
+<script>
+	$(document).ready(function() {
+		var name = localStorage.getItem('username');
+		if(name) {
+			$("#name").html(name + '님 안녕하세요');
+			document.cookie="userName="+name;
+		}
+	});
+	
+	function fnLogout() {
+		localStorage.removeItem('username');
+		location.href = '/lists/login';
+	}
+			
+</script>
+
+<body>
+	<div>
+	<button type="button" onclick="location.href = '/lists/post'">설문조사 등록</button>
+	<span id="name"><span>
+	</div>
+	<button type="button" onclick="fnLogout();">로그아웃</button>
+	
+		<table>
+			<thead>
+				<tr>
+					<td>번호</td>
+					<td>제목</td>
+					<td>작성자</td>
+					<td>결과보기</td>
+				</tr>
+			</thead>
+			<tbody>
+				<div th:each="list : ${listsList}">
+					<tr>
+						<td><a th:id="'id-'+${list.listId}" th:text="${list.listId}"></a></td>
+						<td><a th:text="${list.title}" th:href="'/lists/'+${list.listId}"></a></td>
+						<td><a th:text="${list.author}"></a></td>
+						<td><a th:text="'admin(결과보기)'" th:href="'/lists/admin/'+${list.listId}"></a></td>
+					</tr>
+				</div>
+			</tbody>
+		</table>
+</body>
+</html>

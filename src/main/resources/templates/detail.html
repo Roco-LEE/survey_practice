@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지호 설문조사 상세</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<style>
+	       table {
+	           width: 100%;
+	           border-collapse: collapse;
+	       }
+	       thead {
+	           background-color: #f2f2f2;
+	       }
+	       th, td {
+	           border: 1px solid #ddd;
+	           padding: 8px;
+	           text-align: left;
+	       }
+	       th {
+	           padding-top: 12px;
+	           padding-bottom: 12px;
+	           background-color: #4CAF50;
+	           color: white;
+	       }
+	       tr:nth-child(even) {
+	           background-color: #f9f9f9;
+	       }
+	       tr:hover {
+	           background-color: #ddd;
+	       }
+	       a {
+	           text-decoration: none;
+	           color: #000;
+	       }
+	       a:hover {
+	           color: #4CAF50;
+	       }
+	   </style>
+</head>
+
+<script>
+	$(document).ready(function() {
+		var name = localStorage.getItem('username');
+		if(name) {
+			$("#name").html(name + '님 안녕하세요');
+		}
+		
+		if($('#dupCheck').val() == 'true') {
+			$('#submitAns').prop('disabled', true);
+			$('#dupTxt').text('이미 참여한 설문입니다. 또 하려면 로그아웃 해서 계정을 바꿔주세요.');
+			
+		}
+		
+	    // 라디오 버튼이 변경될 때마다 이벤트 처리
+	    $('input[type="radio"]').change(function() {
+	        // 선택된 라디오 버튼의 값 가져오기
+	        var selectedValue = $('input[name="' + $(this).attr('name') + '"]:checked').val();
+	        
+	        // 선택된 값 출력 (예시)
+	        console.log("Selected value: " + selectedValue);
+	    });
+		
+		$()
+		
+		
+	});
+	
+	function fnLogout() {
+		localStorage.removeItem('username');
+		location.href = '/lists/login';
+	}
+	
+	function fnSubmit() {
+		var answers = [];
+		
+		var author = localStorage.getItem('username');
+		
+		var totalRows = $('#questionTable tbody tr').length;
+		
+		for (var rowIndex = 0; rowIndex < totalRows; rowIndex++) {
+			if($('#questionTable tbody tr:eq('+rowIndex+')').find('td:nth-child(2)').text() == '객관식') {
+				if($('#questionTable tbody tr:eq('+rowIndex+') input[name="answer'+(rowIndex+1)+'"]:checked').val() == undefined) {
+					alert(rowIndex+1 + '번 문항을 답변해주세요')
+					return false;	
+				}
+				
+	            var answer = {
+	                author: author,
+	                listId: $('#listNo').text(),
+	                no: (rowIndex+1),
+	                answer: $('#questionTable tbody tr:eq('+rowIndex+') input[name="answer'+(rowIndex+1)+'"]:checked').val()
+	            };
+			}else {
+				if($('#questionTable tbody tr:eq('+rowIndex+')').find('td:nth-child(4) input').val() == ''){
+					alert(rowIndex+1 + '번 문항을 입력해주세요')	
+					return false;	
+				}
+				
+	            var answer = {
+	                author: author,
+	                listId: $('#listNo').text(),
+	                no: (rowIndex+1),
+	                answer: $('#questionTable tbody tr:eq('+rowIndex+')').find('td:nth-child(4) input').val()
+	            };
+			}
+
+            answers.push(answer);
+        }
+		
+		$.ajax({
+	        type: 'POST',
+	        url: 'submit',
+	        contentType: 'application/json', // 데이터 형식 지정
+	        data: JSON.stringify(answers), // JSON 형식으로 변환하여 전송
+	        success: function(response) {
+	            if(response == "good") {
+					location.href = "/lists"
+				}
+	        },
+	        error: function(xhr, status, error) {
+	            // 오류 콜백
+	            console.error('오류:', error);
+	        }
+	    });
+			
+	}
+			
+</script>
+
+<body>
+	<input id="dupCheck" th:value="${dupCheck}" hidden></input>
+	
+	<div>
+	<button type="button" onclick="location.href = '/lists'">목록으로</button>
+	<span id="name"><span>
+	</div>
+	<button type="button" onclick="fnLogout();">로그아웃</button>
+	
+		<table>
+			<tr>
+				<td>번호</td>
+				<td th:text="${listDetail.listId}" id="listNo"></td>
+			</tr>
+				<td>작성자</td>
+				<td th:text="${listDetail.author}"></td>
+			<tr>
+				<td>제목</td>
+				<td th:text="${listDetail.title}"></td>
+			</tr>
+			<tr>
+				<td>내용</td>
+				<td th:text="${listDetail.contents}"></td>
+			</tr>
+		</table>
+		
+		<table id="questionTable">
+	        <thead>
+	            <tr>
+	                <th>순번</th>
+	                <th>유형</th>
+	                <th>질문</th>
+					<th:block th:each="i : ${#numbers.sequence(1, maxSize)}">
+		                <th th:text="'보기' + ${i}"></th>
+					</th:block>
+	            </tr>
+	        </thead>
+	        <tbody>
+					<tr th:each="question : ${listDetail.questions}">
+						<td><a th:text="${question.no}"></a></td>
+						<td><a th:text="${question.type} == 1 ? '주관식' : '객관식'"></a></td>
+						<td><a th:text="${question.question}"></a></td>
+						<div th:if="${question.type} == 1">
+							<td th:colspan="${maxSize}"><input style="width: 700px;" /></td>
+						</div>
+						<div th:unless="${question.type} == 1">
+							<div th:each="i : ${#numbers.sequence(1, question.type)}">
+								<td>
+								<input type="radio" th:id="'ans' + ${i}" th:name="'answer' + ${question.no}" th:value="${i}" />
+						        <label th:for="'ans' + ${i}" th:text="${question['ans' + i]}"></label>
+								</td>
+							</div>
+						</div>
+					</tr>
+	    </table>
+				
+		<span id="dupTxt"></span>
+		<button type="button" id="submitAns" onclick="fnSubmit();">제출하기</button>
+		<button type="button" onclick="location.href='/lists'">취소</button>
+		
+		
+</body>
+</html>

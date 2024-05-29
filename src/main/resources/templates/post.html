@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지호 설문조사 등록</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<style>
+		table {
+           width: 100%;
+           border-collapse: collapse;
+       }
+       table, th, td {
+           border: 1px solid black;
+       }
+       th, td {
+           padding: 8px;
+           text-align: left;
+       }
+       th {
+           background-color: #f2f2f2;
+       }
+	   </style>
+</head>
+
+<script>
+	$(document).ready(function() {
+		$("#author").text(localStorage.getItem('username'));
+		
+		var rowCount = 0;
+
+	    function updateRowIndices() {
+	        $('#questionTable tbody tr').each(function(index) {
+	            $(this).find('td:first').text(index + 1);
+	        });
+	    }
+
+	    function createRow() {
+	        rowCount++;
+	        var row = $('<tr></tr>');
+	        row.append('<td>' + rowCount + '</td>');
+	        
+	        var questionType = $('<select name="questionType[]"><option value="객관식">객관식</option><option value="주관식">주관식</option></select>');
+	        row.append($('<td></td>').append(questionType));
+	        
+	        row.append('<td><input type="text" name="question[]" style="width: 200px; height: 30px;"/></td>');
+	        
+	        var optionCount = $('<select name="optionCount[]"><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>');
+	        row.append($('<td></td>').append(optionCount));
+
+	        for (var i = 1; i <= 5; i++) {
+	            row.append('<td><input type="text" name="option' + i + '[]" style="width: 100px; height: 30px;" disabled /></td>');
+	        }
+
+	        $('#questionTable tbody').append(row);
+	        
+			questionType.change(function() {
+	            if ($(this).val() == "객관식") {
+	                optionCount.change();
+	                row.find('td').slice(3).find('select').prop('disabled', false);
+	            } else {
+	                row.find('td').slice(4, 9).find('input[type="text"]').prop('disabled', true).val('');
+	                row.find('td').slice(3).find('select').prop('disabled', true);
+	            }
+	        });
+
+	        optionCount.change(function() {
+	            var count = parseInt($(this).val());
+	            row.find('td').slice(4, 9).find('input[type="text"]').prop('disabled', true);
+	            for (var i = 1; i <= count; i++) {
+	                row.find('td:nth-child(' + (4 + i) + ') input').prop('disabled', false);
+	            }
+	        }).trigger('change');
+	    }
+
+	    $('#addRowBtn').click(function() {
+			event.preventDefault();
+		    createRow();
+		    updateRowIndices();
+	    });
+
+	    $('#removeRowBtn').click(function() {
+			event.preventDefault();
+	        if ($('#questionTable tbody tr').length > 0) {
+	            $('#questionTable tbody tr:last').remove();
+	            rowCount--;
+	            updateRowIndices();
+	        }
+	    });
+
+		$('#questionForm').submit(function(event) {
+		    event.preventDefault(); // 기본 폼 제출 방지
+		    var formData = $(this).serializeArray(); // 폼 데이터를 배열로 직렬화
+		    var questions = [];
+			
+			var author = $("#author").text();
+			var title = $("#title").val();
+			var contents = $("#contents").val();
+			
+			var totalRows = $('#questionTable tbody tr').length;
+
+	        for (var rowIndex = 0; rowIndex < totalRows; rowIndex++) {
+	            var question = {
+	                author: author,
+	                title: title,
+	                contents: contents,
+	                questionType: $('#questionTable tbody tr:eq('+rowIndex+')').find('td:nth-child(2) select').val(),
+	                question: $('#questionTable tbody tr:eq('+rowIndex+')').find('td:nth-child(3) input').val(),
+	                optionCount: $('#questionTable tbody tr:eq('+rowIndex+')').find('td:nth-child(4) select').val(),
+	                options: []
+	            };
+	            
+	            // 객관식일 경우 보기 추가
+	            if (question.questionType === '객관식') {
+	                for (var j = 0; j < question.optionCount; j++) {
+	                    question.options.push($('tbody tr:eq('+rowIndex+')').find('td:nth-child('+(5+j)+') input').val());
+	                }
+	            }
+
+	            questions.push(question);
+	        }
+
+		    // JSON 형식으로 변환하여 서버로 전송
+		    $.ajax({
+		        type: 'POST',
+		        url: 'post',
+		        contentType: 'application/json', // 데이터 형식 지정
+		        data: JSON.stringify(questions), // JSON 형식으로 변환하여 전송
+		        success: function(response) {
+		            if(response == "good") {
+						location.href = "/lists"
+					}
+		        },
+		        error: function(xhr, status, error) {
+		            // 오류 콜백
+		            console.error('오류:', error);
+		        }
+		    });
+		});
+		
+    });
+</script>
+
+<body>
+	<h3>1. 작성정보를 입력해주세요</h3>
+	
+	<table>
+		<thead>
+			<tr>
+				<td >작성자</td>
+				<td ><span type="text" name="author" id="author" style="width: 700px; height: 100%;" readonly/></td>
+			</tr>
+			<tr>
+				<td >제목</td>
+				<td ><input type="text" name="title" id="title" style="width: 700px; height: 100%;"/></td>
+			</tr>
+			<tr>
+				<td >내용</td>
+				<td ><input type="text" name="contents" id="contents" style="width: 700px; height: 200px;"/></td>
+			</tr>
+		</tbody>
+	</table>
+	
+	<h3>2. 설문내용을 입력해주세요</h3>
+	
+	<button id="addRowBtn">+</button>
+	<button id="removeRowBtn">-</button>
+
+	<form id="questionForm" method="post" action="post">
+	    <table id="questionTable">
+	        <thead>
+	            <tr>
+	                <th>순번</th>
+	                <th>질문유형</th>
+	                <th>질문</th>
+	                <th>보기개수</th>
+	                <th>보기1</th>
+	                <th>보기2</th>
+	                <th>보기3</th>
+	                <th>보기4</th>
+	                <th>보기5</th>
+	            </tr>
+	        </thead>
+	        <tbody>
+	        </tbody>
+	    </table>
+		
+		<h3>3. 최종 제출을 해주세요</h3>
+		<button type="submit">작성</button>
+		<button type="button" onclick="location.href='/lists'">취소</button>
+	</form>
+	
+	
+</body>
+</html>

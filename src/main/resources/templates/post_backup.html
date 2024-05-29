@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지호 설문조사 등록</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<style>
+	       table {
+	           width: 100%;
+	           border-collapse: collapse;
+	       }
+	       thead {
+	           background-color: #f2f2f2;
+	       }
+	       th, td {
+	           border: 1px solid #ddd;
+	           padding: 8px;
+	           text-align: left;
+	       }
+	       th {
+	           padding-top: 12px;
+	           padding-bottom: 12px;
+	           background-color: #4CAF50;
+	           color: white;
+	       }
+	       tr:nth-child(even) {
+	           background-color: #f9f9f9;
+	       }
+	       tr:hover {
+	           background-color: #ddd;
+	       }
+	       a {
+	           text-decoration: none;
+	           color: #000;
+	       }
+	       a:hover {
+	           color: #4CAF50;
+	       }
+		   .option-input {
+               margin-bottom: 10px;
+           }
+           .hidden {
+               display: none;
+           }
+	   </style>
+</head>
+
+<script>
+	$(document).ready(function() {
+		$("#author").val(localStorage.getItem('username'));
+		
+		
+        $('input[name="questionType"]').change(function() {
+            if ($(this).val() == 'multiple') {
+                $('#optionsContainer').removeClass('hidden');
+                $('#subjectiveQuestion').addClass('hidden');
+            } else {
+                $('#optionsContainer').addClass('hidden');
+                $('#subjectiveQuestion').removeClass('hidden');
+            }
+        });
+
+        $('#numOptions').change(function() {
+            var numOptions = $(this).val();
+            $('#optionsInput').empty();
+            for (var i = 1; i <= numOptions; i++) {
+                $('#optionsInput').append(
+                    '<div class="option-input"><label>보기 ' + i + ' </label><input type="text" name="option' + i + '"></div>'
+                );
+            }
+        });
+		
+		
+		var questionCount = 0;
+
+	    $('#addQuestion').click(function() {
+	        var questionType = $('input[name="questionType"]:checked').val();
+	        var questionText = $('#objectiveQuestion').val();
+	        var options = [];
+
+	        if (questionType == 'multiple') {
+	            $('#optionsInput input[type="text"]').each(function() {
+	                options.push($(this).val());
+	            });
+	        }
+
+	        questionCount++;
+			
+			var newRow = '<tr>' +
+	                     '<td class="questionNumber">' + questionCount + '</td>' +
+	                     '<td>' + (questionType == 'multiple' ? '객관식' : '주관식') + '</td>' +
+	                     '<td>' + questionText + '</td>';
+
+	        // 헤더에 보기 추가
+			if(questionType == 'multiple') {
+		        for (var i = 1; i <= 5; i++) {
+		            newRow += '<td>' + (options[i - 1] ? options[i - 1] : '') + '</td>';
+		        }
+			} else {
+				newRow += '<td colspan="5"></td>';
+			}
+			
+			
+			
+	        newRow += '<td><button class="deleteQuestion">삭제</button></td>' +
+	                  '</tr>';
+
+	        $('#questionTable tbody').append(newRow);
+	    });
+
+	    $(document).on('click', '.deleteQuestion', function() {
+	        $(this).closest('tr').remove();
+	        updateQuestionNumbers();
+	    });
+
+	    function updateQuestionNumbers() {
+	        var currentNumber = 1;
+	        $('#questionTable tbody tr').each(function() {
+	            $(this).find('.questionNumber').text(currentNumber++);
+	        });
+	        questionCount = currentNumber - 1;
+	    }
+    });
+</script>
+
+<body>
+	<form id="form" method="post" action="/lists/post">
+
+		<table>
+			<thead>
+				<tr>
+					<td >작성자</td>
+					<td ><input type="text" name="author" id="author" style="width: 700px; height: 100%;" readonly/></td>
+				</tr>
+				<tr>
+					<td >제목</td>
+					<td ><input type="text" name="title" id="title" style="width: 700px; height: 100%;"/></td>
+				</tr>
+				<tr>
+					<td >내용</td>
+					<td ><input type="text" name="contents" id="contents" style="width: 700px; height: 200px;"/></td>
+				</tr>
+			</tbody>
+		</table>
+		
+		<h2>질문</h2>
+		
+		<div id="questionForm">
+            <h4>질문을 입력하세요?</h4>
+            <input type="text" id="objectiveQuestion" style="width: 700px; height:100px;"/>
+			
+			<div>
+	        <label><input type="radio" name="questionType" value="multiple" checked/> 객관식</label>
+	        <label><input type="radio" name="questionType" value="subjective"/> 주관식</label>
+			</div>
+			
+		    <div id="optionsContainer">
+	            <h4>보기갯수</h4>
+	            <span><select id="numOptions">
+	                <option value="2" selected>2</option>
+	                <option value="3">3</option>
+	                <option value="4">4</option>
+	                <option value="5">5</option>
+	            </select></span>
+	            
+				<div id="optionsInput">
+					<div class="option-input"><label>보기 1 </label><input type="text" name="option1"></div>
+					<div class="option-input"><label>보기 2 </label><input type="text" name="option2"></div>
+				</div>
+	        </div>
+			<button type="button" id="addQuestion">추가하기</button>
+	    </div>
+		
+		<div id="questionList">
+		    <table id="questionTable" border="1">
+		        <thead>
+		            <tr>
+		                <th>순번</th>
+		                <th>질문유형</th>
+		                <th>질문</th>
+		                <th>보기1</th>
+		                <th>보기2</th>
+		                <th>보기3</th>
+		                <th>보기4</th>
+		                <th>보기5</th>
+		                <th>삭제</th>
+		            </tr>
+		        </thead>
+		        <tbody></tbody>
+		    </table>
+		</div>
+
+			
+		<button type="submit">작성</button>
+<!--		<button type="button" onclick="location.href='/lists'">취소</button>-->
+		<button type="button" onclick="console.log('dd')">취소</button>
+	</form>
+</body>
+</html>

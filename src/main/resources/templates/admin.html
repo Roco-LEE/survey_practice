@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지호 설문조사 상세</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<style>
+	       table {
+	           width: 100%;
+	           border-collapse: collapse;
+	       }
+	       thead {
+	           background-color: #f2f2f2;
+	       }
+	       th, td {
+	           border: 1px solid #ddd;
+	           padding: 8px;
+	           text-align: left;
+	       }
+	       th {
+	           padding-top: 12px;
+	           padding-bottom: 12px;
+	           background-color: #4CAF50;
+	           color: white;
+	       }
+	       tr:nth-child(even) {
+	           background-color: #f9f9f9;
+	       }
+	       tr:hover {
+	           background-color: #ddd;
+	       }
+	       a {
+	           text-decoration: none;
+	           color: #000;
+	       }
+	       a:hover {
+	           color: #4CAF50;
+	       }
+	   </style>
+</head>
+
+<script>
+	$(document).ready(function() {
+		var name = localStorage.getItem('username');
+		if(name) {
+			$("#name").html(name + '님 안녕하세요');
+		}
+		
+		var totalRows = $('#questionTable tbody tr').length;
+		var quesCnt = $('#questionTable thead tr th').length-2;
+		
+		for(var i=0; i<totalRows; i++) {
+			var author = $('#questionTable tbody tr:eq('+i+') td:eq(1)').text(); 
+			
+			for(var j=1; j<quesCnt+1; j++) {
+				$('#'+author+'-'+j).text($('span[data="'+author+'-'+j+'"]').text());
+			}	
+		}
+		
+		
+	});
+	
+	function fnLogout() {
+		localStorage.removeItem('username');
+		location.href = '/lists/login';
+	}
+			
+</script>
+
+<body>
+	<div>
+	<button type="button" onclick="location.href = '/lists'">목록으로</button>
+	<span id="name"><span>
+	</div>
+	<button type="button" onclick="fnLogout();">로그아웃</button>
+	
+		<table>
+			<tr>
+				<td>번호</td>
+				<td th:text="${listDetail.listId}" id="listNo"></td>
+			</tr>
+				<td>작성자</td>
+				<td th:text="${listDetail.author}"></td>
+			<tr>
+				<td>제목</td>
+				<td th:text="${listDetail.title}"></td>
+			</tr>
+			<tr>
+				<td>내용</td>
+				<td th:text="${listDetail.contents}"></td>
+			</tr>
+		</table>
+		
+		<table id="questionTable">
+	        <thead>
+	            <tr>
+	                <th>순번</th>
+	                <th>답변자</th>
+					<th:block th:each="i : ${#numbers.sequence(1, questionsCnt)}">
+						<th th:text="${i} + '번'"></th>
+					<th:block>
+	            </tr>
+	        </thead>
+	        <tbody>
+				<div th:each="author, stat : ${authorsList}">
+					<tr>
+						<td th:text="${stat.index + 1}"></td>
+						<td><a th:text="${author}"></a></td>
+						<th:block th:each="i : ${#numbers.sequence(1, questionsCnt)}">
+							<td th:id="${author} + '-' + ${i}"></td>
+						<th:block>
+					</tr>
+				</div>
+	    </table>
+		
+		<div hidden>
+			<th:block th:each="answer : ${answersList}">
+				<span th:data="${answer.author} + '-' + ${answer.no}" th:text="${answer.answer}"> </span>
+			</th:block>
+		</div>
+		
+</body>
+</html>
